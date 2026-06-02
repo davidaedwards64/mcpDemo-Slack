@@ -132,9 +132,10 @@ async def main() -> None:
         print(f"ERROR: Token exchange failed — {body.get('error', body)}")
         return
 
+    # Token may be top-level or nested under authed_user depending on app type
     authed = body.get("authed_user", {})
-    access_token = authed.get("access_token", "")
-    refresh_token = authed.get("refresh_token", "")
+    access_token = body.get("access_token") or authed.get("access_token", "")
+    refresh_token = body.get("refresh_token") or authed.get("refresh_token", "")
 
     if not access_token:
         print(f"ERROR: No access_token in response: {body}")
