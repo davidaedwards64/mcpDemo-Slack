@@ -66,12 +66,16 @@ The `SLACK_MCP_TOKEN` (user token `xoxp-...`) needs at minimum:
 | `search:read` | Search messages |
 | `chat:write` | Post messages (if needed) |
 
-### Step 1 — Create a Slack app and get a token
+### Step 1 — Create a Slack app
 
 1. Go to [https://api.slack.com/apps](https://api.slack.com/apps) and create a new app
-2. Under **OAuth & Permissions**, add the scopes above
-3. Install the app to your workspace
-4. Copy the **User OAuth Token** (`xoxp-...`)
+2. Under **OAuth & Permissions → User Token Scopes**, add the scopes above
+3. Under **OAuth & Permissions → Redirect URLs**, add `http://localhost:8888/callback`
+4. Install the app to your workspace
+5. Note the **Client ID** and **Client Secret** from the app's Basic Information page
+
+> **Note:** The Slack MCP server requires an OAuth 2.0 *user* access token (`xoxp-...`) obtained via
+> the authorization code + PKCE flow — not a standard bot token.
 
 ### Step 2 — Configure environment
 
@@ -83,14 +87,24 @@ Edit `.env` and set:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 SESSION_SECRET=<generate with: python3 -c "import secrets; print(secrets.token_hex(32))">
-SLACK_MCP_TOKEN=xoxp-...
+SLACK_CLIENT_ID=<your app client ID>
+SLACK_CLIENT_SECRET=<your app client secret>
 ```
 
-### Step 3 — Run the smoke test
+### Step 3 — Obtain a Slack user token
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python3 scripts/get_slack_token.py
+```
+
+This opens a browser window for Slack authorization. After you approve, it saves
+`SLACK_MCP_TOKEN` (and `SLACK_REFRESH_TOKEN`) to your `.env` automatically.
+
+### Step 4 — Run the smoke test
+
+```bash
 python3 scripts/smoke_test.py
 ```
 
@@ -99,7 +113,7 @@ python3 scripts/smoke_test.py
 - [ ] Tool list is non-empty
 - [ ] `Smoke test passed — Phase 1 complete.`
 
-### Step 4 — Run the full app locally
+### Step 5 — Run the full app locally
 
 ```bash
 uvicorn backend.main:app --reload
