@@ -67,6 +67,23 @@
 
     header .logout-btn:hover { color: #e6edf3; border-color: #8b949e; }
 
+    /* ── Two-pane layout ─────────────────────────────────── */
+
+    #content-row {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Left pane: chat ─────────────────────────────────── */
+
+    #chat-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     #messages {
       flex: 1;
       overflow-y: auto;
@@ -199,6 +216,209 @@
 
     #send:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
     #send:not(:disabled):hover { background: #611f69; }
+
+    /* ── Right pane: security dashboard ─────────────────── */
+
+    #security-pane {
+      width: 300px;
+      flex-shrink: 0;
+      border-left: 1px solid #21262d;
+      background: #0d1117;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #484f58;
+      margin-bottom: 8px;
+    }
+
+    /* User identity card */
+
+    #identity-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    #identity-card .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    #identity-card .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #4A154B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    #identity-card .user-details {
+      overflow: hidden;
+    }
+
+    #identity-card .user-display-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e6edf3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #identity-card .user-email {
+      font-size: 11px;
+      color: #8b949e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #identity-card .provider-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #8b949e;
+    }
+
+    #identity-card .provider-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3fb950;
+    }
+
+    /* Auth flow steps */
+
+    #auth-flow-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      position: relative;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 30px;
+      bottom: -6px;
+      width: 1px;
+      background: #30363d;
+    }
+
+    .step-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .step-icon.idle {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #484f58;
+    }
+
+    .step-icon.active {
+      background: #1c2233;
+      border: 1px solid #388bfd;
+      color: #388bfd;
+    }
+
+    .step-icon.success {
+      background: #1a2d1a;
+      border: 1px solid #3fb950;
+      color: #3fb950;
+    }
+
+    .step-icon.warn {
+      background: #2d2200;
+      border: 1px solid #d29922;
+      color: #d29922;
+    }
+
+    .step-icon.error {
+      background: #2d1a1a;
+      border: 1px solid #f85149;
+      color: #f85149;
+    }
+
+    .step-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #e6edf3;
+      line-height: 1.4;
+    }
+
+    .step-detail {
+      font-size: 11px;
+      color: #8b949e;
+      margin-top: 2px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .step-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .step-badge.success { background: #1a2d1a; color: #3fb950; border: 1px solid #3fb950; }
+    .step-badge.active  { background: #1c2233; color: #388bfd; border: 1px solid #388bfd; }
+    .step-badge.warn    { background: #2d2200; color: #d29922; border: 1px solid #d29922; }
+    .step-badge.error   { background: #2d1a1a; color: #f85149; border: 1px solid #f85149; }
+    .step-badge.idle    { background: #21262d; color: #484f58; border: 1px solid #30363d; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
   </style>
 </head>
 <body>
@@ -213,26 +433,122 @@
     </div>
   </header>
 
-  <div id="messages"></div>
+  <div id="content-row">
 
-  <div id="input-area">
-    <textarea id="input" placeholder="Ask about your Slack workspace..." rows="1"></textarea>
-    <button id="send">Send</button>
+    <!-- Left: chat -->
+    <div id="chat-pane">
+      <div id="messages"></div>
+      <div id="input-area">
+        <textarea id="input" placeholder="Ask about your Slack workspace..." rows="1"></textarea>
+        <button id="send">Send</button>
+      </div>
+    </div>
+
+    <!-- Right: security dashboard -->
+    <div id="security-pane">
+
+      <!-- User identity -->
+      <div id="identity-card">
+        <div class="panel-section-title">Signed-in User</div>
+        <div class="card-header">
+          <div class="avatar" id="avatar">?</div>
+          <div class="user-details">
+            <div class="user-display-name" id="panel-user-name">—</div>
+            <div class="user-email" id="panel-user-email">—</div>
+          </div>
+        </div>
+        <div class="provider-badge">
+          <div class="provider-dot"></div>
+          Authenticated via Okta
+        </div>
+      </div>
+
+      <!-- Auth flow -->
+      <div id="auth-flow-card">
+        <div class="panel-section-title">Auth &amp; Token Flow</div>
+
+        <!-- Step 1: OIDC Login -->
+        <div class="flow-step" id="step-oidc">
+          <div class="step-icon success" id="step-oidc-icon">✓</div>
+          <div class="step-body">
+            <div class="step-title">Okta OIDC Login</div>
+            <div class="step-detail" id="step-oidc-detail">Session established</div>
+            <span class="step-badge success">Complete</span>
+          </div>
+        </div>
+
+        <!-- Step 2: STS Token Exchange -->
+        <div class="flow-step" id="step-sts">
+          <div class="step-icon idle" id="step-sts-icon">2</div>
+          <div class="step-body">
+            <div class="step-title">STS Token Exchange</div>
+            <div class="step-detail" id="step-sts-detail">id_token → Slack access token</div>
+            <span class="step-badge idle" id="step-sts-badge">Pending</span>
+          </div>
+        </div>
+
+        <!-- Step 3: Slack MCP -->
+        <div class="flow-step" id="step-mcp">
+          <div class="step-icon idle" id="step-mcp-icon">3</div>
+          <div class="step-body">
+            <div class="step-title">Slack MCP Session</div>
+            <div class="step-detail" id="step-mcp-detail">Streamable-HTTP connection</div>
+            <span class="step-badge idle" id="step-mcp-badge">Pending</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <script>
     const messagesEl = document.getElementById('messages');
-    const inputEl = document.getElementById('input');
-    const sendBtn = document.getElementById('send');
+    const inputEl    = document.getElementById('input');
+    const sendBtn    = document.getElementById('send');
 
-    // Load current user
+    // ── User identity ──────────────────────────────────────
+
     fetch('/api/me').then(r => r.json()).then(user => {
-      if (!user.authenticated) {
-        window.location.href = '/auth/signin';
-        return;
-      }
-      document.getElementById('user-name').textContent = user.name || user.email;
+      if (!user.authenticated) { window.location.href = '/auth/signin'; return; }
+
+      const name = user.name || user.email;
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('panel-user-name').textContent = name;
+      document.getElementById('panel-user-email').textContent = user.email || '';
+
+      const initials = name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(w => w[0].toUpperCase())
+        .join('');
+      document.getElementById('avatar').textContent = initials || '?';
     });
+
+    // ── Auth flow step helpers ─────────────────────────────
+
+    function setStep(id, state, detail) {
+      const icon  = document.getElementById(`step-${id}-icon`);
+      const badge = document.getElementById(`step-${id}-badge`);
+      const det   = document.getElementById(`step-${id}-detail`);
+
+      const labels = { idle: 'Pending', active: 'In progress…', success: 'Complete', warn: 'Consent needed', error: 'Failed' };
+      const icons  = { idle: id === 'sts' ? '2' : '3', active: '<span class="spin">⟳</span>', success: '✓', warn: '!', error: '✕' };
+
+      icon.className  = `step-icon ${state}`;
+      icon.innerHTML  = icons[state] || id;
+      badge.className = `step-badge ${state}`;
+      badge.textContent = labels[state] || state;
+      if (detail !== undefined) det.textContent = detail;
+    }
+
+    function resetAuthFlow() {
+      setStep('sts', 'idle', 'id_token → Slack access token');
+      setStep('mcp', 'idle', 'Streamable-HTTP connection');
+    }
+
+    // ── Chat helpers ───────────────────────────────────────
 
     function addMsg(cls, text) {
       const el = document.createElement('div');
@@ -276,17 +592,18 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    // ── Input sizing ───────────────────────────────────────
+
     inputEl.addEventListener('input', () => {
       inputEl.style.height = 'auto';
       inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
     });
 
     inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendBtn.click();
-      }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
     });
+
+    // ── Send / SSE ─────────────────────────────────────────
 
     sendBtn.addEventListener('click', async () => {
       const message = inputEl.value.trim();
@@ -297,9 +614,10 @@
       sendBtn.disabled = true;
 
       addMsg('user', message);
+      resetAuthFlow();
 
-      let statusEl = null;
-      let assistantEl = null;
+      let statusEl      = null;
+      let assistantEl   = null;
       let assistantText = '';
 
       try {
@@ -309,17 +627,10 @@
           body: JSON.stringify({ message }),
         });
 
-        if (resp.status === 401) {
-          window.location.href = '/auth/signin';
-          return;
-        }
+        if (resp.status === 401) { window.location.href = '/auth/signin'; return; }
+        if (!resp.ok) { addMsg('status', `Error: ${resp.status} ${resp.statusText}`); return; }
 
-        if (!resp.ok) {
-          addMsg('status', `Error: ${resp.status} ${resp.statusText}`);
-          return;
-        }
-
-        const reader = resp.body.getReader();
+        const reader  = resp.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
@@ -345,24 +656,44 @@
             if (event === 'status') {
               if (statusEl) statusEl.remove();
               statusEl = addMsg('status', `⟳ ${payload.text}`);
+
+              // Map status messages to flow step updates
+              const t = payload.text;
+              if (t === 'Authenticating with Slack...') {
+                setStep('sts', 'active', 'Exchanging id_token for Slack token…');
+              } else if (t === 'Connecting to Slack MCP...') {
+                setStep('sts', 'success', 'Slack access token issued');
+                setStep('mcp', 'active', 'Opening streamable-HTTP session…');
+              } else if (t.startsWith('Ready (')) {
+                const m = t.match(/Ready \((\d+) tools/);
+                setStep('mcp', 'success', m ? `${m[1]} tools available` : 'Session established');
+              }
+
             } else if (event === 'text') {
               if (statusEl) { statusEl.remove(); statusEl = null; }
-              if (!assistantEl) {
-                assistantEl = addMsg('assistant', '');
-                assistantText = '';
-              }
+              if (!assistantEl) { assistantEl = addMsg('assistant', ''); assistantText = ''; }
               assistantText += payload.text;
               assistantEl.textContent = assistantText;
               messagesEl.scrollTop = messagesEl.scrollHeight;
+
             } else if (event === 'tool') {
               addToolCall(payload.name, payload.input);
               assistantEl = null;
+
             } else if (event === 'interaction_required') {
               if (statusEl) { statusEl.remove(); statusEl = null; }
+              setStep('sts', 'warn', 'User consent required');
               addAuthRequired(payload.uri);
+
             } else if (event === 'error') {
               if (statusEl) { statusEl.remove(); statusEl = null; }
               addMsg('status', `Error: ${payload.text}`);
+              // Mark the in-progress step as errored
+              const stsIcon  = document.getElementById('step-sts-icon');
+              const mcpIcon  = document.getElementById('step-mcp-icon');
+              if (stsIcon.classList.contains('active'))  setStep('sts', 'error', payload.text.slice(0, 80));
+              else if (mcpIcon.classList.contains('active')) setStep('mcp', 'error', payload.text.slice(0, 80));
+
             } else if (event === 'done') {
               if (statusEl) { statusEl.remove(); statusEl = null; }
             }
