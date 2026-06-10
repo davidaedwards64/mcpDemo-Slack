@@ -147,7 +147,19 @@ async def api_me(request: Request):
             {"authenticated": False, "email": "", "name": "", "sub": ""},
             status_code=401,
         )
-    return JSONResponse({"authenticated": True, **user})
+    id_token = request.session.get("id_token", "")
+    id_token_claims: dict = {}
+    if id_token:
+        raw = _decode_jwt_payload(id_token)
+        id_token_claims = {
+            "iss": raw.get("iss", ""),
+            "aud": raw.get("aud", ""),
+            "sub": raw.get("sub", ""),
+            "iat": raw.get("iat"),
+            "exp": raw.get("exp"),
+            "ver": raw.get("ver", ""),
+        }
+    return JSONResponse({"authenticated": True, **user, "id_token_claims": id_token_claims})
 
 
 @app.post("/api/chat")

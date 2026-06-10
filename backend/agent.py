@@ -61,6 +61,12 @@ async def run_agent(
                 yield _sse("error", {"text": f"Token exchange failed: {sts_result.get('error', sts_result['status'])}"})
                 return
             token = sts_result["access_token"]
+            yield _sse("token_meta", {
+                "step": "sts",
+                "expires_in": sts_result.get("expires_in", 3600),
+                "cached": sts_result.get("cached", False),
+                "token_prefix": (token[:14] + "...") if token else "",
+            })
         else:
             token = os.environ.get("SLACK_MCP_TOKEN", "")
             if not token:
@@ -86,6 +92,11 @@ async def run_agent(
                 ]
 
                 yield _sse("status", {"text": f"Ready ({len(claude_tools)} tools available)"})
+                yield _sse("token_meta", {
+                    "step": "mcp",
+                    "tool_count": len(claude_tools),
+                    "tools": [t["name"] for t in claude_tools],
+                })
 
                 system_prompt = (
                     "You are a Slack assistant. Help users explore their workspace, "

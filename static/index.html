@@ -419,6 +419,74 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin { display: inline-block; animation: spin 1s linear infinite; }
+
+    /* Step token-detail meta panels */
+
+    .step-meta {
+      display: none;
+      margin-top: 8px;
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 10px;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 5px;
+      padding: 7px 8px;
+    }
+
+    .step-meta.visible { display: block; }
+
+    .meta-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      padding: 1px 0;
+      min-width: 0;
+    }
+
+    .meta-key {
+      flex-shrink: 0;
+      width: 40px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #484f58;
+    }
+
+    .meta-val {
+      flex: 1;
+      color: #79c0ff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meta-val.muted  { color: #8b949e; }
+    .meta-val.green  { color: #3fb950; }
+    .meta-val.yellow { color: #d29922; }
+
+    .meta-sep {
+      border: none;
+      border-top: 1px solid #21262d;
+      margin: 5px 0;
+    }
+
+    .tool-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 5px;
+      max-height: 72px;
+      overflow-y: auto;
+    }
+
+    .tool-chip {
+      font-size: 9px;
+      background: #21262d;
+      color: #8b949e;
+      border-radius: 3px;
+      padding: 1px 5px;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -474,6 +542,7 @@
             <div class="step-title">Okta OIDC Login</div>
             <div class="step-detail" id="step-oidc-detail">Session established</div>
             <span class="step-badge success">Complete</span>
+            <div class="step-meta" id="step-oidc-meta"></div>
           </div>
         </div>
 
@@ -484,6 +553,7 @@
             <div class="step-title">STS Token Exchange</div>
             <div class="step-detail" id="step-sts-detail">id_token → Slack access token</div>
             <span class="step-badge idle" id="step-sts-badge">Pending</span>
+            <div class="step-meta" id="step-sts-meta"></div>
           </div>
         </div>
 
@@ -494,6 +564,7 @@
             <div class="step-title">Slack MCP Session</div>
             <div class="step-detail" id="step-mcp-detail">Streamable-HTTP connection</div>
             <span class="step-badge idle" id="step-mcp-badge">Pending</span>
+            <div class="step-meta" id="step-mcp-meta"></div>
           </div>
         </div>
 
@@ -524,6 +595,20 @@
         .map(w => w[0].toUpperCase())
         .join('');
       document.getElementById('avatar').textContent = initials || '?';
+
+      if (user.id_token_claims) {
+        const c = user.id_token_claims;
+        const issDisplay = (c.iss || '').replace(/^https?:\/\//, '');
+        const audDisplay = Array.isArray(c.aud) ? c.aud[0] : (c.aud || '—');
+        renderMeta('oidc', `
+          <div class="meta-row"><span class="meta-key">iss</span><span class="meta-val muted" title="${c.iss || ''}">${issDisplay || '—'}</span></div>
+          <div class="meta-row"><span class="meta-key">sub</span><span class="meta-val" title="${c.sub || ''}">${c.sub || '—'}</span></div>
+          <div class="meta-row"><span class="meta-key">aud</span><span class="meta-val muted" title="${audDisplay}">${audDisplay}</span></div>
+          <hr class="meta-sep">
+          <div class="meta-row"><span class="meta-key">iat</span><span class="meta-val muted">${fmtTime(c.iat)}</span></div>
+          <div class="meta-row"><span class="meta-key">exp</span><span class="meta-val muted">${fmtTime(c.exp)}</span></div>
+        `);
+      }
     });
 
     // ── Auth flow step helpers ─────────────────────────────
@@ -546,6 +631,27 @@
     function resetAuthFlow() {
       setStep('sts', 'idle', 'id_token → Slack access token');
       setStep('mcp', 'idle', 'Streamable-HTTP connection');
+      ['sts', 'mcp'].forEach(id => {
+        const el = document.getElementById(`step-${id}-meta`);
+        if (el) { el.innerHTML = ''; el.classList.remove('visible'); }
+      });
+    }
+
+    function fmtTime(ts) {
+      if (!ts) return '—';
+      return new Date(ts * 1000).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+    }
+    function fmtDuration(sec) {
+      if (!sec) return '—';
+      if (sec < 60) return `${sec}s`;
+      if (sec < 3600) return `${Math.round(sec / 60)}m`;
+      return `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m`;
+    }
+    function renderMeta(id, html) {
+      const el = document.getElementById(`step-${id}-meta`);
+      if (!el) return;
+      el.innerHTML = html;
+      el.classList.add('visible');
     }
 
     // ── Chat helpers ───────────────────────────────────────
@@ -693,6 +799,23 @@
               const mcpIcon  = document.getElementById('step-mcp-icon');
               if (stsIcon.classList.contains('active'))  setStep('sts', 'error', payload.text.slice(0, 80));
               else if (mcpIcon.classList.contains('active')) setStep('mcp', 'error', payload.text.slice(0, 80));
+
+            } else if (event === 'token_meta') {
+              if (payload.step === 'sts') {
+                renderMeta('sts', `
+                  <div class="meta-row"><span class="meta-key">tok</span><span class="meta-val" title="${payload.token_prefix || ''}">${payload.token_prefix || '—'}</span></div>
+                  <div class="meta-row"><span class="meta-key">exp</span><span class="meta-val green">${fmtDuration(payload.expires_in)}</span></div>
+                  <div class="meta-row"><span class="meta-key">src</span><span class="meta-val ${payload.cached ? 'yellow' : 'green'}">${payload.cached ? 'cached' : 'fresh'}</span></div>
+                `);
+              } else if (payload.step === 'mcp') {
+                const chips = (payload.tools || []).map(t =>
+                  `<span class="tool-chip" title="${t}">${t.replace(/^slack_/, '')}</span>`
+                ).join('');
+                renderMeta('mcp', `
+                  <div class="meta-row"><span class="meta-key">tools</span><span class="meta-val green">${payload.tool_count}</span></div>
+                  <div class="tool-chips">${chips}</div>
+                `);
+              }
 
             } else if (event === 'done') {
               if (statusEl) { statusEl.remove(); statusEl = null; }
