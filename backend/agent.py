@@ -45,6 +45,7 @@ async def run_agent(
     user_message: str,
     user_id_token: str | None = None,
     cache_key: str | None = None,
+    history: list[dict] | None = None,
 ) -> AsyncIterator[str]:
     try:
         # Resolve Slack token: prefer Okta STS exchange, fall back to env var
@@ -111,7 +112,7 @@ async def run_agent(
                 )
 
                 client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-                messages: list[dict] = [{"role": "user", "content": user_message}]
+                messages: list[dict] = list(history or []) + [{"role": "user", "content": user_message}]
 
                 for _ in range(MAX_ITERATIONS):
                     async with client.messages.stream(

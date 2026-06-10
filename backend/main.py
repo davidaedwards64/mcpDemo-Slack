@@ -5,6 +5,7 @@ import json
 import secrets
 import urllib.parse
 from pathlib import Path
+from typing import Any
 
 import httpx
 from fastapi import FastAPI, Request
@@ -19,6 +20,11 @@ from backend.config import get_settings
 _settings = get_settings()
 
 app = FastAPI(title="Slack AI Agent")
+
+# In-memory conversation history keyed by user sub.
+# Each value is a flat list of {"role": "user"|"assistant", "content": str} dicts.
+_history: dict[str, list[dict[str, Any]]] = {}
+MAX_HISTORY_TURNS = 20  # keep last N user+assistant pairs
 
 _session_key = _settings.session_secret or secrets.token_hex(32)
 app.add_middleware(SessionMiddleware, secret_key=_session_key, https_only=False)
@@ -124,6 +130,9 @@ async def auth_callback(
 
 @app.get("/auth/logout")
 async def auth_logout(request: Request):
+    sub = (request.session.get("user") or {}).get("sub")
+    if sub:
+        _history.pop(sub, None)
     request.session.clear()
     return RedirectResponse("/auth/signin")
 
@@ -147,14 +156,48 @@ async def chat(request: Request, body: ChatRequest):
     if not user_id_token:
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
 
-    sub = (request.session.get("user") or {}).get("sub") or None
+    sub = (request.session.get("user") or {}).get("sub") or "anonymous"
+    history = list(_history.get(sub, []))
 
     async def event_stream():
-        async for chunk in run_agent(body.message, user_id_token=user_id_token, cache_key=sub):
+        text_chunks: list[str] = []
+        async for chunk in run_agent(
+            body.message,
+            user_id_token=user_id_token,
+            cache_key=sub,
+            history=history,
+        ):
+            # Accumulate assistant text to update history after the turn completes.
+            if chunk.startswith("event: text\n"):
+                try:
+                    data_line = next(l for l in chunk.split("\n") if l.startswith("data: "))
+                    text_chunks.append(json.loads(data_line[6:]).get("text", ""))
+                except Exception:
+                    pass
             yield chunk
+
+        assistant_text = "".join(text_chunks)
+        if assistant_text:
+            new_history = history + [
+                {"role": "user", "content": body.message},
+                {"role": "assistant", "content": assistant_text},
+            ]
+            # Trim to MAX_HISTORY_TURNS pairs (2 messages each).
+            if len(new_history) > MAX_HISTORY_TURNS * 2:
+                new_history = new_history[-(MAX_HISTORY_TURNS * 2):]
+            _history[sub] = new_history
 
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/chat/clear")
+async def chat_clear(request: Request):
+    """Clear conversation history for the current user."""
+    sub = (request.session.get("user") or {}).get("sub")
+    if sub:
+        _history.pop(sub, None)
+    return JSONResponse({"ok": True})
