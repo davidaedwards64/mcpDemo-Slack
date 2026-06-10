@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     @property
     def okta_issuer(self) -> str:
         """Base URL for the Okta org authorization server."""
-        return f"https://{self.okta_domain}/oauth2/default" if self.okta_domain else ""
+        return f"https://{self.okta_domain}/oauth2" if self.okta_domain else ""
 
     @property
     def okta_token_url(self) -> str:
