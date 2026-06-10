@@ -138,9 +138,15 @@ async def exchange_id_token_for_slack_token(
         # Okta returns 400 for interaction_required
         if resp.status_code != 200:
             if body.get("error") == "interaction_required":
+                interaction_uri = body.get("interaction_uri", "")
+                logger.warning(
+                    "Okta STS interaction_required: interaction_uri=%s body_keys=%s",
+                    interaction_uri[:400] if interaction_uri else "EMPTY",
+                    list(body.keys()),
+                )
                 return {
                     "status": "interaction_required",
-                    "interaction_uri": body.get("interaction_uri", ""),
+                    "interaction_uri": interaction_uri,
                 }
             logger.warning("Okta STS exchange failed (%s): %s", resp.status_code, resp.text)
             return {
