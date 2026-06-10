@@ -151,10 +151,11 @@ async def exchange_id_token_for_slack_token(
         access_token = body.get("access_token", "")
         expires_in = int(body.get("expires_in", 3600))
         logger.warning(
-            "STS exchange success: token_type=%s access_token_prefix=%s issued_token_type=%s body_keys=%s",
+            "STS exchange success: token_type=%s access_token_prefix=%s issued_token_type=%s scope=%s body_keys=%s",
             body.get("token_type"),
             access_token[:20] if access_token else "EMPTY",
             body.get("issued_token_type"),
+            body.get("scope"),
             list(body.keys()),
         )
 

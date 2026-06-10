@@ -68,6 +68,19 @@ async def run_agent(
 
         mcp_headers = {"Authorization": f"Bearer {token}"}
 
+        # Diagnostic: probe MCP endpoint to surface the raw error body on 400
+        import httpx as _httpx, logging as _logging
+        _log = _logging.getLogger(__name__)
+        async with _httpx.AsyncClient(timeout=10.0) as _hc:
+            _probe = await _hc.post(
+                MCP_URL,
+                headers={**mcp_headers, "Content-Type": "application/json", "Accept": "application/json, text/event-stream"},
+                json={"jsonrpc": "2.0", "id": 0, "method": "initialize",
+                      "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                                 "clientInfo": {"name": "probe", "version": "0.1"}}},
+            )
+            _log.warning("Slack MCP probe: status=%s body=%s", _probe.status_code, _probe.text[:500])
+
         yield _sse("status", {"text": "Connecting to Slack MCP..."})
 
         async with streamablehttp_client(MCP_URL, headers=mcp_headers) as (read, write, _):
