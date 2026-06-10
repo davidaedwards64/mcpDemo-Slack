@@ -79,7 +79,21 @@ async def exchange_id_token_for_slack_token(
             return result
 
     try:
+        # Log the id_token claims so we can verify issuer/aud before the exchange
+        try:
+            import base64 as _b64, json as _json
+            _part = user_id_token.split(".")[1]
+            _pad = _part + "=" * (-len(_part) % 4)
+            _claims = _json.loads(_b64.urlsafe_b64decode(_pad))
+            logger.warning(
+                "STS exchange id_token claims: iss=%s aud=%s exp=%s",
+                _claims.get("iss"), _claims.get("aud"), _claims.get("exp"),
+            )
+        except Exception:
+            pass
+
         token_url = settings.okta_token_url
+        logger.warning("STS exchange token_url=%s", token_url)
         client_assertion = create_client_assertion_jwt(
             settings.okta_agent_client_id,
             settings.okta_agent_private_jwk,
