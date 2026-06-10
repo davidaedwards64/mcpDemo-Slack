@@ -9,6 +9,8 @@ import anthropic
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
+from backend.auth.okta_sts import exchange_id_token_for_slack_token
+
 MCP_URL = "https://mcp.slack.com/mcp"
 MODEL = "claude-opus-4-7"
 MAX_ITERATIONS = 10
@@ -41,10 +43,29 @@ def _format_error(exc: BaseException) -> str:
 
 async def run_agent(
     user_message: str,
-    slack_token: str | None = None,
+    user_id_token: str | None = None,
+    cache_key: str | None = None,
 ) -> AsyncIterator[str]:
     try:
-        token = slack_token or os.environ["SLACK_MCP_TOKEN"]
+        # Resolve Slack token: prefer Okta STS exchange, fall back to env var
+        if user_id_token:
+            yield _sse("status", {"text": "Authenticating with Slack..."})
+            sts_result = await exchange_id_token_for_slack_token(
+                user_id_token, cache_key=cache_key
+            )
+            if sts_result["status"] == "interaction_required":
+                yield _sse("interaction_required", {"uri": sts_result.get("interaction_uri", "")})
+                return
+            if sts_result["status"] != "success":
+                yield _sse("error", {"text": f"Token exchange failed: {sts_result.get('error', sts_result['status'])}"})
+                return
+            token = sts_result["access_token"]
+        else:
+            token = os.environ.get("SLACK_MCP_TOKEN", "")
+            if not token:
+                yield _sse("error", {"text": "No Slack token available. Please sign in."})
+                return
+
         mcp_headers = {"Authorization": f"Bearer {token}"}
 
         yield _sse("status", {"text": "Connecting to Slack MCP..."})

@@ -29,13 +29,8 @@
       gap: 10px;
     }
 
-    header .slack-icon {
-      font-size: 20px;
-    }
-
-    header span {
-      color: #e6edf3;
-    }
+    header .slack-icon { font-size: 20px; }
+    header .title { color: #e6edf3; }
 
     header .phase-badge {
       font-size: 11px;
@@ -45,6 +40,32 @@
       padding: 2px 7px;
       font-weight: 400;
     }
+
+    header .spacer { flex: 1; }
+
+    header .user-info {
+      font-size: 13px;
+      color: #8b949e;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header .user-name { color: #e6edf3; }
+
+    header .logout-btn {
+      font-size: 12px;
+      color: #8b949e;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 3px 10px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    header .logout-btn:hover { color: #e6edf3; border-color: #8b949e; }
 
     #messages {
       flex: 1;
@@ -86,6 +107,35 @@
       padding: 2px 0;
       align-self: flex-start;
     }
+
+    .msg.auth-required {
+      background: #161b22;
+      border: 1px solid #E01E5A;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg.auth-required .auth-text {
+      color: #e6edf3;
+      font-size: 14px;
+    }
+
+    .msg.auth-required .auth-link {
+      display: inline-block;
+      background: #4A154B;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      width: fit-content;
+    }
+
+    .msg.auth-required .auth-link:hover { background: #611f69; }
 
     .tool-call {
       background: #0d1117;
@@ -154,8 +204,13 @@
 <body>
   <header>
     <span class="slack-icon">#</span>
-    <span>Slack AI Agent</span>
-    <span class="phase-badge">Phase 1</span>
+    <span class="title">Slack AI Agent</span>
+    <span class="phase-badge">Phase 2</span>
+    <span class="spacer"></span>
+    <div class="user-info">
+      <span class="user-name" id="user-name"></span>
+      <a class="logout-btn" href="/auth/logout">Sign out</a>
+    </div>
   </header>
 
   <div id="messages"></div>
@@ -170,6 +225,15 @@
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');
 
+    // Load current user
+    fetch('/api/me').then(r => r.json()).then(user => {
+      if (!user.authenticated) {
+        window.location.href = '/auth/signin';
+        return;
+      }
+      document.getElementById('user-name').textContent = user.name || user.email;
+    });
+
     function addMsg(cls, text) {
       const el = document.createElement('div');
       el.className = `msg ${cls}`;
@@ -177,6 +241,24 @@
       messagesEl.appendChild(el);
       messagesEl.scrollTop = messagesEl.scrollHeight;
       return el;
+    }
+
+    function addAuthRequired(uri) {
+      const el = document.createElement('div');
+      el.className = 'msg auth-required';
+      const text = document.createElement('div');
+      text.className = 'auth-text';
+      text.textContent = 'Slack access needs authorization. Click below to grant access, then re-send your message.';
+      const link = document.createElement('a');
+      link.className = 'auth-link';
+      link.href = uri;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Authorize Slack Access →';
+      el.appendChild(text);
+      el.appendChild(link);
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
     function addToolCall(name, input) {
@@ -221,11 +303,16 @@
       let assistantText = '';
 
       try {
-        const resp = await fetch('/chat', {
+        const resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message }),
         });
+
+        if (resp.status === 401) {
+          window.location.href = '/auth/signin';
+          return;
+        }
 
         if (!resp.ok) {
           addMsg('status', `Error: ${resp.status} ${resp.statusText}`);
@@ -270,6 +357,9 @@
             } else if (event === 'tool') {
               addToolCall(payload.name, payload.input);
               assistantEl = null;
+            } else if (event === 'interaction_required') {
+              if (statusEl) { statusEl.remove(); statusEl = null; }
+              addAuthRequired(payload.uri);
             } else if (event === 'error') {
               if (statusEl) { statusEl.remove(); statusEl = null; }
               addMsg('status', `Error: ${payload.text}`);
