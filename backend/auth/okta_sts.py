@@ -94,11 +94,27 @@ async def exchange_id_token_for_slack_token(
 
         token_url = settings.okta_token_url
         logger.warning("STS exchange token_url=%s", token_url)
+        logger.warning(
+            "STS exchange agent_client_id=%s (first 8 chars)",
+            settings.okta_agent_client_id[:8] if settings.okta_agent_client_id else "EMPTY",
+        )
         client_assertion = create_client_assertion_jwt(
             settings.okta_agent_client_id,
             settings.okta_agent_private_jwk,
             token_url,
         )
+        # Log decoded client_assertion claims to verify iss/aud/exp
+        try:
+            import base64 as _b64, json as _json
+            _ca_part = client_assertion.split(".")[1]
+            _ca_pad = _ca_part + "=" * (-len(_ca_part) % 4)
+            _ca_claims = _json.loads(_b64.urlsafe_b64decode(_ca_pad))
+            logger.warning(
+                "STS client_assertion claims: iss=%s aud=%s exp=%s",
+                _ca_claims.get("iss"), _ca_claims.get("aud"), _ca_claims.get("exp"),
+            )
+        except Exception:
+            pass
         payload: dict[str, str] = {
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
             "subject_token": user_id_token,
