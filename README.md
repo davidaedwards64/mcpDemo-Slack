@@ -34,8 +34,6 @@ An AI agent that interacts with a Slack workspace through Slack's hosted MCP ser
 └──────────────────────────┘
 ```
 
-Unlike the Atlassian variant, no subprocess MCP server is required — the agent connects directly to Slack's externally hosted MCP over HTTPS.
-
 ---
 
 ## Phase 1 — Connect and Test Slack MCP
