@@ -160,11 +160,40 @@ Backend  →  [RFC 8693 STS exchange]  →  Slack access token (xoxp-...)
 Backend  →  [Slack MCP over HTTPS]  →  Slack workspace
 ```
 
-1. The user logs in via Okta (authorization code flow). The backend stores the `id_token` in the session.
-2. On each chat request, the backend signs a short-lived `client_assertion` JWT using the AI Agent's RSA private key.
-3. The backend calls Okta's token endpoint requesting a token exchange — presenting the user's `id_token` as the subject token and the agent's `client_assertion` as the client credential.
-4. Okta validates the request and returns a Slack access token scoped to the configured MCP Server resource.
-5. The backend authenticates to `mcp.slack.com/mcp` with this per-user token. Tokens are cached in memory (keyed by user sub) until near expiry.
+#### User authentication (OIDC — once per session)
+
+- `/auth/start` builds a standard OAuth authorization code request and redirects the browser to Okta's `/v1/authorize` endpoint with `scope: openid email profile`.
+- Okta authenticates the user and redirects back to `/auth/callback` with an authorization code.
+- The backend exchanges the code for tokens by POSTing to Okta's `/v1/token` with the Agentic App's `client_id` and `client_secret`.
+- The `id_token` from that response is stored in the server-side session. The user's `sub`, `email`, and `name` claims are also cached in the session.
+
+#### Token exchange per chat request (RFC 8693)
+
+On every `/api/chat` call, the agent invokes `exchange_id_token_for_slack_token` with the `id_token` from the session:
+
+1. **Build a `client_assertion` JWT** — the AI Agent's RSA private key (`OKTA_AGENT_PRIVATE_JWK`) is used to sign a short-lived RS256 JWT (60s TTL) with `iss`/`sub` = the agent's client ID and `aud` = the Okta token endpoint URL.
+
+2. **POST to Okta's token endpoint** with:
+   - `grant_type`: `urn:ietf:params:oauth:grant-type:token-exchange` (RFC 8693)
+   - `subject_token`: the user's `id_token` (proving who the user is)
+   - `subject_token_type`: `urn:ietf:params:oauth:token-type:id_token`
+   - `requested_token_type`: `urn:okta:params:oauth:token-type:oauth-sts` (Okta-specific)
+   - `client_assertion_type`: JWT bearer
+   - `client_assertion`: the signed JWT (proving who the agent is)
+   - `resource`: the ORN of the Slack MCP Server resource in Okta
+
+3. **Okta validates** the request against the Managed Connection (agent → MCP Server resource) and calls Slack's OAuth on behalf of the user to mint a scoped `xoxp-...` token.
+
+4. **Three possible outcomes:**
+   - `success` — Okta returns a Slack `access_token` with `expires_in`
+   - `interaction_required` — the user hasn't consented yet; Okta returns an `interaction_uri` which the UI surfaces as a link for the user to click
+   - `exchange_failed` / `error` — surfaced to the user as an error message
+
+5. **Caching** — the resulting Slack token is cached in memory keyed by the user's `sub`, and reused until 60 seconds before it expires, avoiding a round-trip to Okta on every message.
+
+#### MCP connection
+
+Once the Slack token is resolved, the agent opens a `streamablehttp_client` session to `https://mcp.slack.com/mcp` with `Authorization: Bearer <xoxp-token>`, initializes the MCP session, and enters the Claude tool-use loop.
 
 ### Okta configuration
 
