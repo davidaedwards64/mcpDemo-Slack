@@ -5,39 +5,33 @@ An AI agent that interacts with a Slack workspace through Slack's hosted MCP ser
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Browser                               │
-│         Chat Interface (queries & streaming responses)       │
-└────────────────────────┬────────────────────────────────────┘
-                         │ SSE streaming
-                         ▼
-              ┌──────────────────────┐
-              │   FastAPI Backend    │
-              │  (Python / Uvicorn)  │
-              │                      │
-              │  ┌────────────────┐  │
-              │  │  Agent Loop    │  │
-              │  │  (Claude API)  │  │
-              │  └───────┬────────┘  │
-              │          │ MCP client│
-              └──────────┼───────────┘
-                         │ HTTPS + Bearer token
-                         ▼
-              ┌──────────────────────┐
-              │  Slack MCP Server    │
-              │  mcp.slack.com/mcp   │
-              └──────────┬───────────┘
-                         │ Slack API
-                         ▼
-              ┌──────────────────────┐
-              │  Slack Workspace     │
-              └──────────────────────┘
-
-         [Phase 2: O4AA]
-              ┌──────────────────────┐
-              │  Okta for AI Agents  │
-              │  (OAuth STS broker)  │
-              └──────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          Browser                                     │
+│                Chat Interface + Okta Login                           │
+└──────────┬──────────────────────────────────────┬───────────────────┘
+           │ SSE / chat request                    │ [Phase 2] OIDC login
+           ▼                                       ▼
+┌──────────────────────────┐          ┌────────────────────────────────┐
+│    FastAPI Backend       │ RFC 8693 │     Okta for AI Agents         │
+│   (Python / Uvicorn)     │─────────►│                                │
+│                          │◄─────────│  • OIDC Web App (user auth)    │
+│  ┌────────────────────┐  │  Slack   │  • AI Agent (workload princ.)  │
+│  │    Agent Loop      │  │  token   │  • MCP Server resource         │
+│  │    (Claude API)    │  │          │  • Managed Connection          │
+│  └─────────┬──────────┘  │          └────────────────────────────────┘
+└────────────┼─────────────┘
+             │ HTTPS + Bearer token
+             │ (per-user xoxp · Phase 2, or static token · Phase 1)
+             ▼
+┌──────────────────────────┐
+│   Slack MCP Server       │
+│   mcp.slack.com/mcp      │
+└────────────┬─────────────┘
+             │ Slack API
+             ▼
+┌──────────────────────────┐
+│   Slack Workspace        │
+└──────────────────────────┘
 ```
 
 Unlike the Atlassian variant, no subprocess MCP server is required — the agent connects directly to Slack's externally hosted MCP over HTTPS.
