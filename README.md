@@ -69,7 +69,7 @@ The Slack MCP server requires a user token (`xoxp-...`) with the following scope
 ### Step 1 — Create a Slack app
 
 1. Go to [https://api.slack.com/apps](https://api.slack.com/apps) and create a new app (choose **From scratch**)
-2. Under **Agents & AI Tools → Agents**, enable **MCP (Model Context Protocol)**. This unlocks the app's ability to serve as an MCP client against `mcp.slack.com/mcp`.
+2. Under **Agents & AI Tools → Agents**, enable **MCP (Model Context Protocol)**. This is required — without it, `mcp.slack.com/mcp` will reject the token regardless of the scopes granted. Enabling it registers the app as an MCP-capable client and gates access to Slack's hosted MCP endpoint.
 3. Under **OAuth & Permissions → User Token Scopes**, add all the scopes from the table above
 4. Under **OAuth & Permissions → Redirect URLs**, add `http://localhost:8888/callback`
 5. Install the app to your workspace
