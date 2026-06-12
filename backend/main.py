@@ -2,7 +2,6 @@
 
 import base64
 import json
-import logging
 import secrets
 import urllib.parse
 from pathlib import Path
@@ -16,11 +15,8 @@ from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.agent import run_agent
-from backend.auth.okta_sts import clear_cached_token, revoke_user_grants
+from backend.auth.okta_sts import clear_cached_token
 from backend.config import get_settings
-
-logging.getLogger("backend").setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
 
 _settings = get_settings()
 
@@ -136,12 +132,10 @@ async def auth_callback(
 @app.get("/auth/logout")
 async def auth_logout(request: Request):
     sub = (request.session.get("user") or {}).get("sub")
-    logger.warning("LOGOUT CALLED: sub=%r session_keys=%r", sub, list(request.session.keys()))
     id_token = request.session.get("id_token", "")
     if sub:
         _history.pop(sub, None)
         clear_cached_token(sub)
-        await revoke_user_grants(sub)
     request.session.clear()
 
     s = get_settings()
