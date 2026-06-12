@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # ORN of the Slack MCP Server object registered in Okta
     okta_mcp_resource_indicator: str = ""
 
+    # Okta Management API token — used to revoke user grants on logout
+    okta_api_token: str = ""
+
     @property
     def okta_issuer(self) -> str:
         """Base URL for the Okta org authorization server."""

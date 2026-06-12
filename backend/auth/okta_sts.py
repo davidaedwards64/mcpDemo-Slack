@@ -26,6 +26,35 @@ def clear_cached_token(cache_key: str) -> None:
     _cache.pop(cache_key, None)
 
 
+async def revoke_user_grants(user_sub: str) -> None:
+    """Delete the user's Okta grants for the agent client via the Management API.
+
+    This forces the next STS exchange to return interaction_required, showing
+    the Slack consent screen again — useful for demos.
+    Silently skips if OKTA_API_TOKEN or OKTA_AGENT_CLIENT_ID is not configured.
+    """
+    settings = get_settings()
+    if not settings.okta_api_token or not settings.okta_agent_client_id or not settings.okta_domain:
+        return
+
+    url = (
+        f"https://{settings.okta_domain}"
+        f"/api/v1/users/{user_sub}/clients/{settings.okta_agent_client_id}/grants"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.delete(
+                url,
+                headers={"Authorization": f"SSWS {settings.okta_api_token}"},
+            )
+        if resp.is_success or resp.status_code == 404:
+            logger.info("Revoked Okta grants for user %s (status %s)", user_sub, resp.status_code)
+        else:
+            logger.warning("Failed to revoke Okta grants for user %s: %s %s", user_sub, resp.status_code, resp.text)
+    except Exception:
+        logger.exception("Error revoking Okta grants for user %s", user_sub)
+
+
 def create_client_assertion_jwt(client_id: str, private_jwk_str: str, token_url: str) -> str:
     """Sign a short-lived RS256 JWT for use as client_assertion in the token exchange."""
     private_jwk = json.loads(private_jwk_str)
