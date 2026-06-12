@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.agent import run_agent
+from backend.auth.okta_sts import clear_cached_token
 from backend.config import get_settings
 
 _settings = get_settings()
@@ -133,6 +134,7 @@ async def auth_logout(request: Request):
     sub = (request.session.get("user") or {}).get("sub")
     if sub:
         _history.pop(sub, None)
+        clear_cached_token(sub)
     request.session.clear()
     return RedirectResponse("/auth/signin")
 

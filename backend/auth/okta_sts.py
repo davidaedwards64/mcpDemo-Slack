@@ -21,6 +21,11 @@ logger = logging.getLogger(__name__)
 _cache: dict[str, dict[str, Any]] = {}
 
 
+def clear_cached_token(cache_key: str) -> None:
+    """Remove a user's cached Slack token, forcing a fresh STS exchange on next request."""
+    _cache.pop(cache_key, None)
+
+
 def create_client_assertion_jwt(client_id: str, private_jwk_str: str, token_url: str) -> str:
     """Sign a short-lived RS256 JWT for use as client_assertion in the token exchange."""
     private_jwk = json.loads(private_jwk_str)
