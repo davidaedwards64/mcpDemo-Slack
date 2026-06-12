@@ -36,7 +36,7 @@ async def revoke_user_grants(user_sub: str) -> None:
     """
     settings = get_settings()
     if not settings.okta_api_token or not settings.okta_domain:
-        logger.info("Grant revocation skipped: OKTA_API_TOKEN or OKTA_DOMAIN not configured")
+        logger.warning("Grant revocation skipped: OKTA_API_TOKEN or OKTA_DOMAIN not configured")
         return
 
     url = f"https://{settings.okta_domain}/api/v1/users/{user_sub}/grants"

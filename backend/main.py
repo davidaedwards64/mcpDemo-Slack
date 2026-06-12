@@ -2,6 +2,7 @@
 
 import base64
 import json
+import logging
 import secrets
 import urllib.parse
 from pathlib import Path
@@ -17,6 +18,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from backend.agent import run_agent
 from backend.auth.okta_sts import clear_cached_token, revoke_user_grants
 from backend.config import get_settings
+
+logging.getLogger("backend").setLevel(logging.INFO)
 
 _settings = get_settings()
 
