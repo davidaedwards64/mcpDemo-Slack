@@ -1,6 +1,7 @@
 """Agentic loop: per-request Slack MCP session → Claude → SSE stream."""
 
 import json
+import logging
 import os
 from collections.abc import AsyncIterator
 from typing import Any
@@ -10,6 +11,8 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 from backend.auth.okta_sts import exchange_id_token_for_slack_token
+
+logger = logging.getLogger(__name__)
 
 MCP_URL = "https://mcp.slack.com/mcp"
 MODEL = "claude-opus-4-7"
@@ -54,6 +57,7 @@ async def run_agent(
             sts_result = await exchange_id_token_for_slack_token(
                 user_id_token, cache_key=cache_key
             )
+            logger.warning("STS result: status=%s cached=%s", sts_result.get("status"), sts_result.get("cached"))
             if sts_result["status"] == "interaction_required":
                 yield _sse("interaction_required", {"uri": sts_result.get("interaction_uri", "")})
                 return
