@@ -27,30 +27,35 @@ def clear_cached_token(cache_key: str) -> None:
 
 
 async def revoke_user_grants(user_sub: str) -> None:
-    """Delete the user's Okta grants for the agent client via the Management API.
+    """Delete all Okta grants for the user via the Management API.
 
-    This forces the next STS exchange to return interaction_required, showing
-    the Slack consent screen again — useful for demos.
-    Silently skips if OKTA_API_TOKEN or OKTA_AGENT_CLIENT_ID is not configured.
+    Targets DELETE /api/v1/users/{userId}/grants (all grants) rather than
+    scoping to a specific client ID, because the AI Agents STS consent grant
+    may not be stored under the agent client ID.
+    Silently skips if OKTA_API_TOKEN is not configured.
     """
     settings = get_settings()
-    if not settings.okta_api_token or not settings.okta_agent_client_id or not settings.okta_domain:
+    if not settings.okta_api_token or not settings.okta_domain:
+        logger.info("Grant revocation skipped: OKTA_API_TOKEN or OKTA_DOMAIN not configured")
         return
 
-    url = (
-        f"https://{settings.okta_domain}"
-        f"/api/v1/users/{user_sub}/clients/{settings.okta_agent_client_id}/grants"
-    )
+    url = f"https://{settings.okta_domain}/api/v1/users/{user_sub}/grants"
+    logger.info("Revoking all Okta grants for user %s via %s", user_sub, url)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.delete(
                 url,
                 headers={"Authorization": f"SSWS {settings.okta_api_token}"},
             )
-        if resp.is_success or resp.status_code == 404:
-            logger.info("Revoked Okta grants for user %s (status %s)", user_sub, resp.status_code)
+        if resp.is_success:
+            logger.info("Revoked all Okta grants for user %s (status %s)", user_sub, resp.status_code)
+        elif resp.status_code == 404:
+            logger.info("No Okta grants found for user %s (404)", user_sub)
         else:
-            logger.warning("Failed to revoke Okta grants for user %s: %s %s", user_sub, resp.status_code, resp.text)
+            logger.warning(
+                "Failed to revoke Okta grants for user %s: HTTP %s — %s",
+                user_sub, resp.status_code, resp.text,
+            )
     except Exception:
         logger.exception("Error revoking Okta grants for user %s", user_sub)
 
