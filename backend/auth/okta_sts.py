@@ -40,22 +40,14 @@ async def revoke_user_grants(user_sub: str) -> None:
         return
 
     url = f"https://{settings.okta_domain}/api/v1/users/{user_sub}/grants"
-    logger.info("Revoking all Okta grants for user %s via %s", user_sub, url)
+    logger.warning("REVOKE: calling DELETE %s", url)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.delete(
                 url,
                 headers={"Authorization": f"SSWS {settings.okta_api_token}"},
             )
-        if resp.is_success:
-            logger.info("Revoked all Okta grants for user %s (status %s)", user_sub, resp.status_code)
-        elif resp.status_code == 404:
-            logger.info("No Okta grants found for user %s (404)", user_sub)
-        else:
-            logger.warning(
-                "Failed to revoke Okta grants for user %s: HTTP %s — %s",
-                user_sub, resp.status_code, resp.text,
-            )
+        logger.warning("REVOKE: HTTP %s — %s", resp.status_code, resp.text[:200])
     except Exception:
         logger.exception("Error revoking Okta grants for user %s", user_sub)
 
