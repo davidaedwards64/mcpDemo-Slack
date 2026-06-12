@@ -311,6 +311,20 @@
       background: #2ea043;
     }
 
+    /* Active Slack Token card */
+
+    #token-card {
+      background: #ffffff;
+      border: 1px solid #ddd5c8;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    #token-card .step-meta {
+      display: block;
+      margin-top: 0;
+    }
+
     /* Auth flow steps */
 
     #auth-flow-card {
@@ -532,6 +546,16 @@
         </div>
       </div>
 
+      <!-- Active Slack Token -->
+      <div id="token-card">
+        <div class="panel-section-title">Active Slack Token</div>
+        <div class="step-meta">
+          <div class="meta-row"><span class="meta-key">tok</span><span class="meta-val muted" id="tm-tok">—</span></div>
+          <div class="meta-row"><span class="meta-key">exp</span><span class="meta-val muted" id="tm-exp">—</span></div>
+          <div class="meta-row"><span class="meta-key">src</span><span class="meta-val muted" id="tm-src">—</span></div>
+        </div>
+      </div>
+
       <!-- Auth flow -->
       <div id="auth-flow-card">
         <div class="panel-section-title">Auth &amp; Token Flow</div>
@@ -636,6 +660,25 @@
         const el = document.getElementById(`step-${id}-meta`);
         if (el) { el.innerHTML = ''; el.classList.remove('visible'); }
       });
+      document.getElementById('tm-tok').textContent = '—';
+      document.getElementById('tm-tok').className = 'meta-val muted';
+      document.getElementById('tm-exp').textContent = '—';
+      document.getElementById('tm-exp').className = 'meta-val muted';
+      document.getElementById('tm-src').textContent = '—';
+      document.getElementById('tm-src').className = 'meta-val muted';
+    }
+
+    function updateTokenCard(payload) {
+      const tok = document.getElementById('tm-tok');
+      const exp = document.getElementById('tm-exp');
+      const src = document.getElementById('tm-src');
+      tok.textContent = payload.token_prefix || '—';
+      tok.title = payload.token_prefix || '';
+      tok.className = 'meta-val';
+      exp.textContent = fmtDuration(payload.expires_in);
+      exp.className = 'meta-val green';
+      src.textContent = payload.cached ? 'cached' : 'fresh';
+      src.className = `meta-val ${payload.cached ? 'yellow' : 'green'}`;
     }
 
     function fmtTime(ts) {
@@ -803,6 +846,7 @@
 
             } else if (event === 'token_meta') {
               if (payload.step === 'sts') {
+                updateTokenCard(payload);
                 renderMeta('sts', `
                   <div class="meta-row"><span class="meta-key">tok</span><span class="meta-val" title="${payload.token_prefix || ''}">${payload.token_prefix || '—'}</span></div>
                   <div class="meta-row"><span class="meta-key">exp</span><span class="meta-val green">${fmtDuration(payload.expires_in)}</span></div>
