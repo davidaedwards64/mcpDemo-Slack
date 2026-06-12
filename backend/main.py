@@ -20,6 +20,7 @@ from backend.auth.okta_sts import clear_cached_token, revoke_user_grants
 from backend.config import get_settings
 
 logging.getLogger("backend").setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 _settings = get_settings()
 
@@ -135,6 +136,7 @@ async def auth_callback(
 @app.get("/auth/logout")
 async def auth_logout(request: Request):
     sub = (request.session.get("user") or {}).get("sub")
+    logger.warning("LOGOUT CALLED: sub=%r session_keys=%r", sub, list(request.session.keys()))
     id_token = request.session.get("id_token", "")
     if sub:
         _history.pop(sub, None)
