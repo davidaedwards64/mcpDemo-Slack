@@ -20,32 +20,6 @@ logger = logging.getLogger(__name__)
 # Simple in-memory cache: cache_key → {"data": dict, "expires_at": float}
 _cache: dict[str, dict[str, Any]] = {}
 
-# App ID cache: okta_agent_client_id → Okta app object ID (0oa...)
-_app_id_cache: dict[str, str] = {}
-
-
-async def _find_app_id_for_client(client_id: str, domain: str, api_token: str) -> str | None:
-    """Resolve the Okta app object ID (0oa...) from an OAuth2 client ID."""
-    if client_id in _app_id_cache:
-        return _app_id_cache[client_id]
-    url = f"https://{domain}/api/v1/apps"
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                url,
-                params={"filter": f'credentials.oauthClient.client_id eq "{client_id}"', "limit": "1"},
-                headers={"Authorization": f"SSWS {api_token}"},
-            )
-        if resp.is_success:
-            apps = resp.json()
-            if apps:
-                _app_id_cache[client_id] = apps[0]["id"]
-                return _app_id_cache[client_id]
-        logger.warning("App ID lookup: HTTP %s — %s", resp.status_code, resp.text[:200])
-    except Exception:
-        logger.exception("Error looking up app ID for client %s", client_id)
-    return None
-
 
 def clear_cached_token(cache_key: str) -> None:
     """Remove a user's cached Slack token, forcing a fresh STS exchange on next request."""
@@ -76,24 +50,6 @@ async def revoke_user_grants(user_sub: str) -> None:
         logger.warning("REVOKE: HTTP %s — %s", resp.status_code, resp.text[:200])
     except Exception:
         logger.exception("Error revoking Okta grants for user %s", user_sub)
-
-    # Remove user from agent app to revoke AI Agents STS consent
-    if settings.okta_agent_client_id:
-        app_id = await _find_app_id_for_client(
-            settings.okta_agent_client_id, settings.okta_domain, settings.okta_api_token
-        )
-        if app_id:
-            app_url = f"https://{settings.okta_domain}/api/v1/apps/{app_id}/users/{user_sub}"
-            logger.warning("REVOKE app user: DELETE %s", app_url)
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.delete(
-                        app_url,
-                        headers={"Authorization": f"SSWS {settings.okta_api_token}"},
-                    )
-                logger.warning("REVOKE app user: HTTP %s — %s", resp.status_code, resp.text[:200])
-            except Exception:
-                logger.exception("Error removing user from agent app %s", app_id)
 
 
 def create_client_assertion_jwt(client_id: str, private_jwk_str: str, token_url: str) -> str:
