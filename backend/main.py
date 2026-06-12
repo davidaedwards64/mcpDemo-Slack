@@ -132,11 +132,21 @@ async def auth_callback(
 @app.get("/auth/logout")
 async def auth_logout(request: Request):
     sub = (request.session.get("user") or {}).get("sub")
+    id_token = request.session.get("id_token", "")
     if sub:
         _history.pop(sub, None)
         clear_cached_token(sub)
         await revoke_user_grants(sub)
     request.session.clear()
+
+    s = get_settings()
+    if id_token and s.okta_end_session_url and s.okta_post_logout_redirect_uri:
+        params = urllib.parse.urlencode({
+            "id_token_hint":            id_token,
+            "post_logout_redirect_uri": s.okta_post_logout_redirect_uri,
+        })
+        return RedirectResponse(f"{s.okta_end_session_url}?{params}")
+
     return RedirectResponse("/auth/signin")
 
 

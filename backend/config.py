@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Okta Management API token — used to revoke user grants on logout
     okta_api_token: str = ""
 
+    # Must be registered as a Sign-out redirect URI in the Okta app settings
+    okta_post_logout_redirect_uri: str = ""
+
     @property
     def okta_issuer(self) -> str:
         """Base URL for the Okta org authorization server."""
@@ -33,6 +36,10 @@ class Settings(BaseSettings):
     def okta_token_url(self) -> str:
         """Org-level token endpoint used for STS token exchange."""
         return f"https://{self.okta_domain}/oauth2/v1/token" if self.okta_domain else ""
+
+    @property
+    def okta_end_session_url(self) -> str:
+        return f"https://{self.okta_domain}/oauth2/v1/logout" if self.okta_domain else ""
 
     class Config:
         env_file = ".env"
