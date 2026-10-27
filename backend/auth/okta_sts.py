@@ -70,6 +70,8 @@ async def exchange_id_token_for_slack_token(
             "subject_token": user_id_token,
             "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
             "requested_token_type": "urn:okta:params:oauth:token-type:oauth-sts",
+            "client_id": settings.okta_client_id,
+            "client_secret": settings.okta_client_secret,
         }
         if settings.okta_mcp_resource_indicator:
             payload["resource"] = settings.okta_mcp_resource_indicator
@@ -78,7 +80,6 @@ async def exchange_id_token_for_slack_token(
             resp = await client.post(
                 token_url,
                 data=payload,
-                auth=(settings.okta_client_id, settings.okta_client_secret),
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 

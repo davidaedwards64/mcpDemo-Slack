@@ -76,7 +76,7 @@ KEY FLOWS
 
 ② Per-request token exchange (RFC 8693):
               /api/chat reads id_token from session
-              → okta_sts.py authenticates with client_id/client_secret (HTTP Basic)
+              → okta_sts.py authenticates with client_id/client_secret (form body)
               → POST Okta /v1/token: id_token + resource ORN
               → Okta validates user + AI Agent identity + Managed Connection
               → returns xoxp-... token (cached by sub, TTL=expires_in−60s)

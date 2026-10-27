@@ -144,7 +144,7 @@ Backend  →  [Slack MCP over HTTPS]  →  Slack workspace
 
 On every `/api/chat` call, the agent invokes `exchange_id_token_for_slack_token` with the `id_token` from the session:
 
-1. **POST to Okta's token endpoint**, authenticating with HTTP Basic (`OKTA_CLIENT_ID` / `OKTA_CLIENT_SECRET`) and a form body of:
+1. **POST to Okta's token endpoint**, with a form body of (`client_id` / `client_secret` are `OKTA_CLIENT_ID` / `OKTA_CLIENT_SECRET`, sent as `client_secret_post`):
    - `grant_type`: `urn:ietf:params:oauth:grant-type:token-exchange` (RFC 8693)
    - `subject_token`: the user's `id_token` (proving who the user is)
    - `subject_token_type`: `urn:ietf:params:oauth:token-type:id_token`
