@@ -6,23 +6,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     anthropic_api_key: str
     session_secret: str = ""
-    slack_mcp_token: str = ""  # Phase 1 fallback; not used when Okta is configured
 
-    # Okta OIDC — web app (confidential client)
+    # Okta app (confidential client) — the OIDC app and the AI Agent share one
+    # client ID/secret, used for both sign-in and the STS token exchange
     okta_client_id: str = ""
     okta_client_secret: str = ""
     okta_domain: str = ""           # e.g. your-org.okta.com (no https://)
     okta_redirect_uri: str = "http://localhost:8000/auth/callback"
 
-    # Okta AI Agent workload — private key JWT client
-    okta_agent_client_id: str = ""
-    okta_agent_private_jwk: str = ""  # RSA private key as single-line JSON string
-
     # ORN of the Slack MCP Server object registered in Okta
     okta_mcp_resource_indicator: str = ""
-
-    # Okta Management API token — used to revoke user grants on logout
-    okta_api_token: str = ""
 
     # Must be registered as a Sign-out redirect URI in the Okta app settings
     okta_post_logout_redirect_uri: str = ""

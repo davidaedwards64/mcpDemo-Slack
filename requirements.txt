@@ -10,4 +10,3 @@ itsdangerous>=2.1.0
 pydantic-settings>=2.0.0
 
 # Auth
-python-jose[cryptography]>=3.3.0

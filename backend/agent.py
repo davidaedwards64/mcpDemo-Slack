@@ -51,7 +51,7 @@ async def run_agent(
     history: list[dict] | None = None,
 ) -> AsyncIterator[str]:
     try:
-        # Resolve Slack token: prefer Okta STS exchange, fall back to env var
+        # Resolve Slack token via Okta STS exchange
         if user_id_token:
             yield _sse("status", {"text": "Authenticating with Slack..."})
             sts_result = await exchange_id_token_for_slack_token(
@@ -71,10 +71,8 @@ async def run_agent(
                 "token_prefix": (token[:14] + "...") if token else "",
             })
         else:
-            token = os.environ.get("SLACK_MCP_TOKEN", "")
-            if not token:
-                yield _sse("error", {"text": "No Slack token available. Please sign in."})
-                return
+            yield _sse("error", {"text": "Not signed in. Please sign in."})
+            return
 
         mcp_headers = {"Authorization": f"Bearer {token}"}
 
